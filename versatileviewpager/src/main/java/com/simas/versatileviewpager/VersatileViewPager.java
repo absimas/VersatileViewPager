@@ -106,7 +106,7 @@ public class VersatileViewPager extends ViewPager {
 			post(new Runnable() {
 				@Override
 				public void run() {
-					if (oldCount == 1 && getAdapter().getCount() > 2) {
+					if (oldCount == 1 && getAdapter().getCount() >= 2) {
 						setCurrentItem(1);
 					}
 				}
