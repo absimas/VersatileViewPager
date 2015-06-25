@@ -21,11 +21,11 @@ package com.simas.versatileviewpager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 
-public class MyVersatilePagerAdapter extends VersatilePagerAdapter {
+public class ExampleVersatilePagerAdapter extends VersatilePagerAdapter {
 
 	private final String TAG = getClass().getName();
 
-	public MyVersatilePagerAdapter(FragmentManager fm) {
+	public ExampleVersatilePagerAdapter(FragmentManager fm) {
 		super(fm);
 	}
 
