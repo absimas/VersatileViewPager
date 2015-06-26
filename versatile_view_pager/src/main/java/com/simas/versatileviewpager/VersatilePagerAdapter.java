@@ -120,7 +120,9 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 	}
 
 	@Override
-	public void startUpdate(ViewGroup container) {}
+	public void startUpdate(ViewGroup container) {
+		mCurTransaction = mFragmentManager.beginTransaction();
+	}
 
 	@Override
 	public Object instantiateItem(ViewGroup container, int position) {
@@ -140,9 +142,6 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 		item.fragment.setMenuVisibility(false);
 		item.fragment.setUserVisibleHint(false);
 
-		if (mCurTransaction == null) {
-			mCurTransaction = mFragmentManager.beginTransaction();
-		}
 		mCurTransaction.add(container.getId(), item.fragment);
 
 		return item.fragment;
@@ -150,10 +149,6 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 
 	@Override
 	public void destroyItem(ViewGroup container, int position, Object object) {
-		if (mCurTransaction == null) {
-			mCurTransaction = mFragmentManager.beginTransaction();
-		}
-
 		Item item = mItems.get(position);
 		if (item.fragment != null) {
 			item.state = mFragmentManager.saveFragmentInstanceState(item.fragment);
@@ -164,11 +159,9 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 
 	@Override
 	public void finishUpdate(ViewGroup container) {
-		if (mCurTransaction != null) {
-			mCurTransaction.commitAllowingStateLoss();
-			mCurTransaction = null;
-			mFragmentManager.executePendingTransactions();
-		}
+		mCurTransaction.commitAllowingStateLoss();
+		mCurTransaction = null;
+		mFragmentManager.executePendingTransactions();
 	}
 
 	@Override

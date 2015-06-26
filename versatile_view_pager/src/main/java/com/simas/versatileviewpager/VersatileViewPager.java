@@ -33,6 +33,8 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+// ToDo rename package to versatile_view_pager (in both modules)
+
 /**
  * <h5>Notes:</h5>
  * <ul>
