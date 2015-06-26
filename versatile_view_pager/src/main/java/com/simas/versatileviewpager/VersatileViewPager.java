@@ -102,7 +102,6 @@ public class VersatileViewPager extends ViewPager {
 			}
 			final int oldCount = getAdapter().getCount();
 			getAdapter().useRealCount();
-			Log.e(TAG, "well at least we notified");
 			getAdapter().notifyDataSetChanged();
 			// If a new item has been added, switch to it
 			post(new Runnable() {
@@ -156,7 +155,8 @@ public class VersatileViewPager extends ViewPager {
 	@Override
 	public void setAdapter(final PagerAdapter adapter) {
 		if (!(adapter instanceof VersatilePagerAdapter)) {
-			throw new IllegalArgumentException("ItemViewPager can only use an VersatilePagerAdapter.");
+			throw new IllegalArgumentException("VersatileViewPager can only use a " +
+					"VersatilePagerAdapter.");
 		}
 		// Remove observer from the previous adapter
 		if (getAdapter() != null) {
