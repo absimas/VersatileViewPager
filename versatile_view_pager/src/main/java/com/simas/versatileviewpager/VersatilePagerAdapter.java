@@ -121,7 +121,9 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 
 	@Override
 	public void startUpdate(ViewGroup container) {
-		mCurTransaction = mFragmentManager.beginTransaction();
+		if (mCurTransaction == null) {
+			mCurTransaction = mFragmentManager.beginTransaction();
+		}
 	}
 
 	@Override
