@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
 			View root = i.inflate(com.simas.versatileviewpager.R.layout.fragment_empty, c, false);
 			TextView tv = (TextView) root.findViewById(R.id.text);
 			tv.setText(String.format(getString(R.string.numbered_fragment_format), position));
-			Log.e("TAG", "create : " + position + " num: " + num);
 			return root;
 		}
 	}
