@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/VersatileViewPager.iml" filepath="$PROJECT_DIR$/VersatileViewPager.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/versatile_view_pager/versatile_view_pager.iml" filepath="$PROJECT_DIR$/versatile_view_pager/versatile_view_pager.iml" />
       <module fileurl="file://$PROJECT_DIR$/lib/versatile_view_pager.iml" filepath="$PROJECT_DIR$/lib/versatile_view_pager.iml" />
     </modules>
   </component>
