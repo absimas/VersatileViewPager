@@ -11,7 +11,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/versatileviewpager" />
+            <option value="$PROJECT_DIR$/versatile_view_pager" />
           </set>
         </option>
       </GradleProjectSettings>
