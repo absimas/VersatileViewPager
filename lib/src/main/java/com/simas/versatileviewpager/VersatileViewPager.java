@@ -21,6 +21,7 @@ package com.simas.versatileviewpager;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
+import android.os.Build;
 import android.support.v4.view.*;
 import android.support.v4.view.PagerAdapter;
 import android.util.AttributeSet;
@@ -101,6 +102,7 @@ public class VersatileViewPager extends ViewPager {
 			}
 			final int oldCount = getAdapter().getCount();
 			getAdapter().useRealCount();
+			Log.e(TAG, "well at least we notified");
 			getAdapter().notifyDataSetChanged();
 			// If a new item has been added, switch to it
 			post(new Runnable() {
@@ -125,8 +127,10 @@ public class VersatileViewPager extends ViewPager {
 	}
 
 	private void init() {
-		// Disable overscrolling
-		setOverScrollMode(View.OVER_SCROLL_NEVER);
+		if (Build.VERSION.SDK_INT >= 9) {
+			// Disable overscrolling
+			setOverScrollMode(View.OVER_SCROLL_NEVER);
+		}
 		// Create an overlay layout
 		mOverlayImage = new ImageView(getContext());
 		mOverlayImage.setLayoutParams(new ViewGroup
@@ -172,7 +176,7 @@ public class VersatileViewPager extends ViewPager {
 	public boolean onTouchEvent(MotionEvent event) {
 		if (!isEnabled()) {
 			return true;
-		} else if (getCurrentItem() <= 1) {
+		} else if (getCurrentItem() <= 1 && getAdapter().getCount() > 1) {
 			switch (event.getAction()) {
 				case MotionEvent.ACTION_DOWN:
 					mStartDragX = event.getX();
@@ -208,7 +212,7 @@ public class VersatileViewPager extends ViewPager {
 	public boolean onInterceptTouchEvent(MotionEvent event) {
 		if (!isEnabled()) {
 			return true;
-		} else if (getCurrentItem() <= 1) {
+		} else if (getCurrentItem() <= 1 && getAdapter().getCount() > 1) {
 			switch (event.getAction()) {
 				case MotionEvent.ACTION_DOWN:
 					mStartDragX = event.getX();

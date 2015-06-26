@@ -1,1 +1,1 @@
-include ':versatileviewpager'
+include ':app', ':lib'

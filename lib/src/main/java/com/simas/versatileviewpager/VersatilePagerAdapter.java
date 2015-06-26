@@ -71,7 +71,7 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 	public abstract Fragment createItem(int position);
 
 	/**
-	 * Get the item for the specific position. If it's not yet created, returns null.
+	 * Get the item for the specific position. Return null if not yet created or has been cached.
 	 */
 	public Fragment getItem(int position) {
 		return mItems.get(position).fragment;
@@ -127,20 +127,19 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 		if (position > getRealCount()) return null;
 
 		Item item = mItems.get(position);
-
 		if (item.fragment != null) {
 			return item.fragment;
+		} else {
+			item.fragment = createItem(position);
 		}
 
-		item.fragment = createItem(position);
-
-		Fragment.SavedState fss = item.state;
-		if (fss != null) {
-			item.fragment.setInitialSavedState(fss);
+		if (item.state != null) {
+			item.fragment.setInitialSavedState(item.state);
 		}
 
 		item.fragment.setMenuVisibility(false);
 		item.fragment.setUserVisibleHint(false);
+
 		if (mCurTransaction == null) {
 			mCurTransaction = mFragmentManager.beginTransaction();
 		}
@@ -174,7 +173,7 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 
 	@Override
 	public boolean isViewFromObject(View view, Object object) {
-		if (object == null || ((Fragment)object).getView() != view) {
+		if (object == null || view == null || ((Fragment)object).getView() != view) {
 			return false;
 		} else {
 			return true;
@@ -293,6 +292,5 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 	void unregisterDataSetObserverInternal(DataSetObserver observer) {
 		mInternalObserver.unregisterObserver(observer);
 	}
-
 
 }
