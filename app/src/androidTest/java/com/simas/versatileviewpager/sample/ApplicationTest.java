@@ -26,6 +26,7 @@ import android.support.test.espresso.ViewInteraction;
 import android.support.test.espresso.action.ViewActions;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.ActivityInstrumentationTestCase2;
+
 import static android.support.test.espresso.action.ViewActions.*;
 import static com.simas.versatileviewpager.sample.TestUtils.*;
 import static android.support.test.espresso.Espresso.*;
@@ -47,8 +48,11 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 		injectInstrumentation(InstrumentationRegistry.getInstrumentation());
 		mActivity = getActivity();
 
-		// Make sure the count is 1, because empty view is considered an item
+		// Make sure only the empty item is present
 		assertEquals(mActivity.adapter.getCount(), 1);
+
+		// Delay so ViewPager and the empty item are properly set-up
+		sleep(300);
 	}
 
 	@Test
@@ -56,7 +60,7 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 		assertEquals(mActivity.adapter.getCount(), 1);
 
 		ViewInteraction view = onView(withText(getString(R.string.numbered_fragment_format, 0)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 	}
 
 	@Test
@@ -68,15 +72,14 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 
 	@Test
 	public void firstItemCreation() {
-		final int COUNT = 1;
-		requestCount(COUNT);
+		requestCount(1);
 
 		// Check if the switch was successful
 		ViewInteraction view = onView(withText(getString(R.string.numbered_fragment_format, 1)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 
 		//  Make sure the count has increased
-		assertEquals(mActivity.adapter.getCount(), COUNT + 1); // 1 for empty item
+		assertEquals(mActivity.adapter.getCount(), 2); // 1 for empty item
 	}
 
 	@Test
@@ -87,47 +90,34 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 			@Override
 			public void run() {
 				mActivity.adapter.onItemRemoved(1);
-				mActivity.adapter.requestCount(0);
 			}
 		});
-		// Wait for the switch
-		sleep(1000);
+		requestCount(0);
 
 		// Check if the pager has fallen back to the empty view
 		ViewInteraction view = onView(withText(getString(R.string.numbered_fragment_format, 0)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 	}
 
 	@Test
 	public void itemRemoval() {
 		requestCount(5);
 
-		// Switch to the second to last item
-		runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				mActivity.pager.setCurrentItem(4); // 1 for empty item
-			}
-		});
-
-		// Wait for the switch
-		sleep(1000);
+		// Switch to the second to last item // 1 for empty item
+		setCurrentItem(4);
 
 		// Remove the second to last item
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
 				mActivity.adapter.onItemRemoved(4);
-				mActivity.adapter.requestCount(4);
 			}
 		});
-
-		// Wait for the switch
-		sleep(1000);
+		requestCount(4);
 
 		// Should now be on position 4 but because of caching should still say position 5
 		ViewInteraction view = onView(withText(getString(R.string.numbered_fragment_format, 5)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 
 
 		// Remove last item
@@ -135,19 +125,32 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 			@Override
 			public void run() {
 				mActivity.adapter.onItemRemoved(4);
-				mActivity.adapter.requestCount(3);
 			}
 		});
-
-		// Wait for the switch
-		sleep(1000);
+		requestCount(3);
 
 		// Should now be on the last position (3)
 		view = onView(withText(getString(R.string.numbered_fragment_format, 3)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 
-		assertEquals(mActivity.pager.getCurrentItem(), 3);
-		assertEquals(mActivity.adapter.getCount(), 4);
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				mActivity.adapter.onItemRemoved(3);
+			}
+		});
+		requestCount(2);
+
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				mActivity.adapter.onItemRemoved(2);
+			}
+		});
+		requestCount(1);
+
+		assertEquals(mActivity.pager.getCurrentItem(), 1);
+		assertEquals(mActivity.adapter.getCount(), 2);
 	}
 
 	@Test
@@ -165,14 +168,7 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 			assertNull(mActivity.adapter.getItem(3));
 		}
 
-		runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				mActivity.pager.setCurrentItem(5);
-			}
-		});
-
-		sleep(1000);
+		setCurrentItem(5);
 
 		// Neighbours should already be created
 		assertNotNull(mActivity.adapter.getItem(4));
@@ -190,34 +186,35 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 
 		// Should still be on position 1
 		ViewInteraction view = onView(withText(getString(R.string.numbered_fragment_format, 1)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 
 		pager.perform(ViewActions.swipeLeft(), swipeRight());
 
 		// Should still be on position 1
 		view = onView(withText(getString(R.string.numbered_fragment_format, 1)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		view.check(IS_COMPLETELY_DISPLAYED);
 	}
 
 	@Test
 	public void changeItemsBySwiping() {
 		requestCount(10);
 
-		ViewInteraction pager = onView(withId(R.id.pager));
-		pager.perform(swipeLeft());
+		final ViewInteraction pager = onView(withId(R.id.pager));
 
-		ViewInteraction view = onView(withText(getString(R.string.numbered_fragment_format, 2)));
-		view.check(IS_DISPLAYED_ASSERTION);
-
-		pager.perform(swipeLeft(), swipeLeft());
-
-		view = onView(withText(getString(R.string.numbered_fragment_format, 4)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		for (int i=0; i<3; i++) {
+			pager.perform(swipeLeft());
+		}
+		onView(withText(getString(R.string.numbered_fragment_format, 4)))
+				.check(IS_COMPLETELY_DISPLAYED);
 
 		pager.perform(swipeRight(), swipeRight(), swipeRight());
+		onView(withText(getString(R.string.numbered_fragment_format, 1)))
+				.check(IS_COMPLETELY_DISPLAYED);
 
-		view = onView(withText(getString(R.string.numbered_fragment_format, 1)));
-		view.check(IS_DISPLAYED_ASSERTION);
+		setCurrentItem(10);
+
+		onView(withText(getString(R.string.numbered_fragment_format, 10)))
+				.check(IS_COMPLETELY_DISPLAYED);
 	}
 
 
@@ -226,12 +223,20 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				// Increment count
-				mActivity.adapter.requestCount(count);
+				mActivity.adapter.setCount(count);
 			}
 		});
+		sleep(400);
+	}
 
-		sleep(1000);
+	private void setCurrentItem(final int position) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				mActivity.pager.setCurrentItem(position);
+			}
+		});
+		sleep(400);
 	}
 
 	private String getString(int resId) {

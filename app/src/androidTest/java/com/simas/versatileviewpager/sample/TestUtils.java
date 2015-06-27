@@ -18,6 +18,7 @@
  */
 package com.simas.versatileviewpager.sample;
 
+import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.ViewAssertion;
 import static android.support.test.espresso.Espresso.*;
@@ -26,7 +27,8 @@ import static android.support.test.espresso.matcher.ViewMatchers.*;
 
 public class TestUtils {
 
-	public static final ViewAssertion IS_DISPLAYED_ASSERTION = matches(isDisplayed());
+	public static final ViewAssertion IS_DISPLAYED = matches(isDisplayed());
+	public static final ViewAssertion IS_COMPLETELY_DISPLAYED = matches(isCompletelyDisplayed());
 
 	public static void runOnUiThread(Runnable runnable) {
 		InstrumentationRegistry.getInstrumentation().runOnMainSync(runnable);

@@ -80,7 +80,7 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 	/**
 	 * Remove the fragment that is connected to this position, also clear the fragment's state.<br/>
 	 * This method must be called <b>before</b> notifying the internal observers with {@link
-	 * #requestCount(int)}.
+	 * #setCount(int)}.
 	 */
 	public void onItemRemoved(int position) {
 		if (mCurTransaction == null) {
@@ -94,12 +94,11 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 	}
 
 	/**
-	 * Set the new item count internally and notify the internal observers. The actual {@link
-	 * #notifyDataSetChanged()} will not be called because that is expected from the internal
-	 * observers. If items are removed, {@link #onItemRemoved(int)} must also be called to get
-	 * rid of un-used fragments and states.
+	 * Set the new item count internally and notify the internal observers. If items are removed,
+	 * {@link #onItemRemoved(int)} must be called before, to get rid of fragments and their states.
+	 * The internal observers will call {@link #notifyDataSetChanged()} on their own.
 	 */
-	public final void requestCount(int count) {
+	public final void setCount(int count) {
 		if (count < 0) throw new IllegalArgumentException("Count cannot be less than 0!");
 		mRealCount = count;
 		notifyDataSetChangedInternal();

@@ -20,10 +20,14 @@ package com.simas.versatileviewpager;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.os.Handler;
 import android.view.View;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
- * Helper methods
+ * Helper methods and classes
  */
 public class Utils {
 
@@ -41,6 +45,67 @@ public class Utils {
 		v.draw(canvas);
 
 		return b;
+	}
+
+	/**
+	 * This handler enables messages to block queued messages until some specific task is done.
+	 * The blocking is done by calling {@code setPaused(true)} and then when the message has done
+	 * it's job it must call {@code setPaused(false)}. If these two method calls are unnecessary
+	 * for a task, then it shouldn't use this handler. It's more suited for a sequence of
+	 * runnables which together execute a specific task.
+	 */
+	public static class PausableHandler {
+
+		private final Queue<Runnable> mMessageQueue = new ConcurrentLinkedQueue<>();
+		private final Handler mHandler;
+		private final Object mPausableHandlerLock = new Object();
+		private final Runnable mRunNext = new Runnable() {
+			@Override
+			public void run() {
+				if (!isPaused()) {
+					Runnable next = mMessageQueue.poll();
+					if (next != null) {
+						mHandler.post(next);
+					}
+				}
+			}
+		};
+		private boolean mPaused;
+
+		public PausableHandler() {
+			mHandler = new Handler();
+		}
+
+		public PausableHandler(Handler handler) {
+			mHandler = handler;
+		}
+
+		public void post(Runnable runnable) {
+			synchronized (mPausableHandlerLock) {
+				mMessageQueue.add(runnable);
+				mMessageQueue.add(mRunNext);
+				// Execute mRunNext. If the handler isn't paused it will run the next message,
+				// otherwise will wait for setPaused(false) call.
+				mHandler.post(mRunNext);
+			}
+		}
+
+		public void setPaused(boolean paused) {
+			synchronized (mPausableHandlerLock) {
+				if (paused == isPaused()) return;
+				mPaused = paused;
+				if (!isPaused()) {
+					mHandler.post(mRunNext);
+				}
+			}
+		}
+
+		public boolean isPaused() {
+			synchronized (mPausableHandlerLock) {
+				return mPaused;
+			}
+		}
+
 	}
 
 }

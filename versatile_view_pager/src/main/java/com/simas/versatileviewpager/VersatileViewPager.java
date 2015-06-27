@@ -22,6 +22,9 @@ import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.MessageQueue;
 import android.support.v4.view.*;
 import android.support.v4.view.PagerAdapter;
 import android.util.AttributeSet;
@@ -33,7 +36,11 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-// ToDo rename package to versatile_view_pager (in both modules)
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 
 /**
  * <h5>Notes:</h5>
@@ -50,6 +57,7 @@ public class VersatileViewPager extends ViewPager {
 	private ViewGroup mPagerParent, mPreviewOverlay;
 	private int mRemovedPosition;
 	private float mStartDragX;
+	private final Utils.PausableHandler mPausableHandler = new Utils.PausableHandler();
 	private ViewPager.SimpleOnPageChangeListener mTemporarySwitchListener = new ViewPager
 			.SimpleOnPageChangeListener() {
 		@Override
@@ -57,7 +65,6 @@ public class VersatileViewPager extends ViewPager {
 			super.onPageScrollStateChanged(state);
 			if (state == ViewPager.SCROLL_STATE_IDLE) {
 				removeOnPageChangeListener(this);
-
 				// Overlay and image while working (prevent flickering)
 				mOverlayImage.setImageBitmap(Utils.screenshot(VersatileViewPager.this));
 				mPagerParent.addView(mPreviewOverlay);
@@ -75,6 +82,8 @@ public class VersatileViewPager extends ViewPager {
 					public void run() {
 						mPagerParent.removeView(mPreviewOverlay);
 						setEnabled(true);
+						// Resume other messages
+						mPausableHandler.setPaused(false);
 					}
 				});
 			}
@@ -84,33 +93,44 @@ public class VersatileViewPager extends ViewPager {
 		@Override
 		public void onChanged() {
 			super.onChanged();
-			Object primaryItem = getAdapter().getPrimaryItem();
-			if (primaryItem != null) {
-				int primaryPos = getAdapter().getItemPosition(primaryItem);
-				if (primaryPos == PagerAdapter.POSITION_NONE) {
-					// Disable scrolling
-					setEnabled(false);
-
-					mRemovedPosition = getCurrentItem();
-					addOnPageChangeListener(mTemporarySwitchListener);
-					// Animate to the previous item if last one removed, forward otherwise
-					if (getCurrentItem() == getAdapter().getCount() - 1) {
-						setCurrentItem(getCurrentItem() - 1);
-					} else {
-						setCurrentItem(getCurrentItem() + 1);
-					}
-					return;
-				}
+			if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
+				throw new IllegalStateException("Must be notified on the main thread!");
 			}
-			final int oldCount = getAdapter().getCount();
-			getAdapter().useRealCount();
-			getAdapter().notifyDataSetChanged();
-			// If a new item has been added, switch to it
-			post(new Runnable() {
+			mPausableHandler.post(new Runnable() {
 				@Override
 				public void run() {
+					Object primaryItem = getAdapter().getPrimaryItem();
+					if (primaryItem != null) {
+						int primaryPos = getAdapter().getItemPosition(primaryItem);
+						if (primaryPos == PagerAdapter.POSITION_NONE) {
+							// Prevent other switches until finished
+							mPausableHandler.setPaused(true);
+
+							// Disable scrolling
+							setEnabled(false);
+
+							mRemovedPosition = getCurrentItem();
+							addOnPageChangeListener(mTemporarySwitchListener);
+							// Animate to the previous item if last one removed, forward otherwise
+							if (getCurrentItem() == getAdapter().getCount() - 1) {
+								setCurrentItem(getCurrentItem() - 1);
+							} else {
+								setCurrentItem(getCurrentItem() + 1);
+							}
+							return;
+						}
+					}
+					final int oldCount = getAdapter().getCount();
+					getAdapter().useRealCount();
+					getAdapter().notifyDataSetChanged();
+					// If a new item has been added, switch to it
 					if (oldCount == 1 && getAdapter().getCount() >= 2) {
-						setCurrentItem(1);
+						post(new Runnable() {
+							@Override
+							public void run() {
+								setCurrentItem(1);
+							}
+						});
 					}
 				}
 			});

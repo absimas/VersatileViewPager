@@ -18,14 +18,17 @@
  */
 package com.simas.versatileviewpager.sample;
 
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.TextView;
 import com.simas.versatileviewpager.VersatilePagerAdapter;
 import com.simas.versatileviewpager.VersatileViewPager;
@@ -40,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
 		pager = (VersatileViewPager) findViewById(R.id.pager);
 		adapter = new VersatilePagerAdapter(getSupportFragmentManager()) {
 			@Override
@@ -53,6 +58,14 @@ public class MainActivity extends AppCompatActivity {
 			}
 		};
 		pager.setAdapter(adapter);
+//		adapter.setCount(1);
+//		new Handler().postDelayed(new Runnable() {
+//			@Override
+//			public void run() {
+//				adapter.onItemRemoved(1);
+//				adapter.setCount(0);
+//			}
+//		}, 2000);
 	}
 
 	public static class NumberedFragment extends Fragment {
