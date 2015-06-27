@@ -58,14 +58,14 @@ public class MainActivity extends AppCompatActivity {
 			}
 		};
 		pager.setAdapter(adapter);
-		adapter.setCount(2);
-		new Handler().postDelayed(new Runnable() {
-			@Override
-			public void run() {
-				adapter.onItemRemoved(1);
-				adapter.setCount(1);
-			}
-		}, 2000);
+//		adapter.setCount(2);
+//		new Handler().postDelayed(new Runnable() {
+//			@Override
+//			public void run() {
+//				adapter.onItemRemoved(1);
+//				adapter.setCount(1);
+//			}
+//		}, 2000);
 	}
 
 	public static class NumberedFragment extends Fragment {
