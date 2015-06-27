@@ -217,7 +217,6 @@ public class ApplicationTest extends ActivityInstrumentationTestCase2<MainActivi
 				.check(IS_COMPLETELY_DISPLAYED);
 	}
 
-
 	/* Helper methods */
 	private void requestCount(final int count) {
 		runOnUiThread(new Runnable() {

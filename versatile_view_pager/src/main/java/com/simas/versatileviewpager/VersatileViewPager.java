@@ -214,16 +214,14 @@ public class VersatileViewPager extends ViewPager {
 					 * If (scrollX < getClientWidth()) then the page will be switched, i.e.
 					 * empty item becomes exposed. Then, manually scroll to the end of the page.
 					 */
-					if (getScrollX() < 0) {
+					if (getScrollX() <= 0) {
 						if (Math.abs(getScrollX()) > getClientWidth()) {
 							Log.w(TAG, "Bad ScrollX: " + getScrollX());
 							scrollTo(getClientWidth() * -1, getScrollY());
 						}
-					} else {
-						if (getScrollX() < getClientWidth()) {
-							Log.w(TAG, "Bad ScrollX: " + getScrollX());
-							scrollTo(getClientWidth(), getScrollY());
-						}
+					} else if (getScrollX() < getClientWidth()) {
+						Log.w(TAG, "Bad ScrollX: " + getScrollX());
+						scrollTo(getClientWidth(), getScrollY());
 					}
 			}
 		}
