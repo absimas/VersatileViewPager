@@ -40,9 +40,9 @@ import java.util.ArrayList;
  */
 public abstract class VersatilePagerAdapter extends PagerAdapter {
 
+	private static final String STATE_ITEMS = "items";
+	private static final String STATE_COUNT = "count";
 	private final String TAG = getClass().getName();
-	private static final String ITEMS = "states";
-
 	private final FragmentManager mFragmentManager;
 	private FragmentTransaction mCurTransaction = null;
 	private Object mPrimaryItem;
@@ -186,11 +186,10 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 
 	@Override
 	public final Parcelable saveState() {
-		Bundle state = null;
+		Bundle state = new Bundle();
 		// Save items
 		if (mItems.size() > 0) {
-			state = new Bundle();
-			state.putParcelableArrayList(ITEMS, mItems);
+			state.putParcelableArrayList(STATE_ITEMS, mItems);
 
 			// Save fragment references
 			for (int i=0; i<mItems.size(); i++) {
@@ -201,17 +200,19 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 				}
 			}
 		}
+		state.putInt(STATE_COUNT, mCount);
 		return state;
 	}
 
 	@Override
 	public final void restoreState(Parcelable state, ClassLoader loader) {
+		// This code is called at the beginning of onRestoreInstanceState in VersatileViewPager
 		if (state != null) {
-			Bundle bundle = (Bundle)state;
+			final Bundle bundle = (Bundle)state;
 			bundle.setClassLoader(loader);
 			mItems.clear();
-			if (bundle.getParcelableArrayList(ITEMS) != null) {
-				mItems = bundle.getParcelableArrayList(ITEMS);
+			if (bundle.getParcelableArrayList(STATE_ITEMS) != null) {
+				mItems = bundle.getParcelableArrayList(STATE_ITEMS);
 			}
 			Iterable<String> keys = bundle.keySet();
 			for (String key: keys) {
@@ -225,6 +226,12 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 						Log.w(TAG, "Bad fragment at key " + key);
 					}
 				}
+			}
+			int count = bundle.getInt(STATE_COUNT, 0);
+			if (count > 0) {
+				// Change the count and notify manually since list may need the count immediately
+				mRealCount = mCount = count;
+				notifyDataSetChanged();
 			}
 		}
 	}

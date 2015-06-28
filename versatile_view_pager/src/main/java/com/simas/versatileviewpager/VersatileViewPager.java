@@ -22,9 +22,11 @@ import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.MessageQueue;
+import android.os.Parcelable;
 import android.support.v4.view.*;
 import android.support.v4.view.PagerAdapter;
 import android.util.AttributeSet;
@@ -214,14 +216,15 @@ public class VersatileViewPager extends ViewPager {
 					 * If (scrollX < getClientWidth()) then the page will be switched, i.e.
 					 * empty item becomes exposed. Then, manually scroll to the end of the page.
 					 */
-					if (getScrollX() <= 0) {
-						if (Math.abs(getScrollX()) > getClientWidth()) {
-							Log.w(TAG, "Bad ScrollX: " + getScrollX());
-							scrollTo(getClientWidth() * -1, getScrollY());
+					if (getScrollX() % getClientWidth() != 0) {
+						if (getScrollX() < 0 && Math.abs(getScrollX()) > getClientWidth()) {
+							Log.w(TAG, "Bad ScrollX: " + getScrollX() + " client width: " + getClientWidth());
+							int pages = (int) Math.round(Math.abs(getScrollX()) / (double) getClientWidth());
+							scrollTo(pages * getClientWidth() * -1, getScrollY());
+						} else if (getScrollX() < getClientWidth()) {
+							Log.w(TAG, "Bad ScrollX: " + getScrollX() + " client width: " + getClientWidth());
+							scrollTo(getClientWidth(), getScrollY());
 						}
-					} else if (getScrollX() < getClientWidth()) {
-						Log.w(TAG, "Bad ScrollX: " + getScrollX());
-						scrollTo(getClientWidth(), getScrollY());
 					}
 			}
 		}

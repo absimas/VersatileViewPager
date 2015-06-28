@@ -18,7 +18,11 @@
  */
 package com.simas.versatileviewpager.sample;
 
+import android.app.Activity;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.ViewAssertion;
 import static android.support.test.espresso.Espresso.*;
@@ -32,6 +36,18 @@ public class TestUtils {
 
 	public static void runOnUiThread(Runnable runnable) {
 		InstrumentationRegistry.getInstrumentation().runOnMainSync(runnable);
+	}
+
+	public static void rotate(Activity activity) {
+		switch (activity.getResources().getConfiguration().orientation) {
+			case Configuration.ORIENTATION_PORTRAIT:
+				activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+				break;
+			default:
+				activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		}
+
+		SystemClock.sleep(800);
 	}
 
 }
