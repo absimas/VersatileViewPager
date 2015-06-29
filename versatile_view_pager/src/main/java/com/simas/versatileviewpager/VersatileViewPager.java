@@ -21,17 +21,15 @@ package com.simas.versatileviewpager;
 import android.content.Context;
 import android.database.DataSetObserver;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
-import android.os.MessageQueue;
-import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.*;
 import android.support.v4.view.PagerAdapter;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,36 +37,50 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
+ * <h4>How it works:</h4>
+ * When deleting it switches to its neighbour with {@link #setCurrentItem(int)}, however if both
+ * of the neighbours are deleted based on {@link VersatilePagerAdapter#getRealCount()}, then it
+ * will switch to the last position based the real count. <br/><br/>
+ * To switch seamlessly after the current item is no longer in at the current position, the pager
+ * switches to the neighbour (forward if there are any, otherwise backwards). After switching to
+ * the neighbour an image depicting the current view will be overlain while the real position
+ * switching takes place by invoking {@link VersatilePagerAdapter#notifyDataSetChanged()}. <br/><br/>
+ * While this two step switch takes place, the {@link android.support.v4.view.ViewPager
+ * .OnPageChangeListener}s are disabled.
  * <h5>Notes:</h5>
  * <ul>
+ *     <li>The preview will be added as sibling and can block the view of widgets like DrawerLayout.
+ *     To avoid that, you may need to wrap this pager in a separate container, e.g. a
+ *     {@link RelativeLayout}</li>
  *     <li>The item at position 0 is always the empty item</li>
- *     <li>Left overscroll is not available since the empty item is considered a valid item.</li>
- *     <li>The header can still be selected with {@code setCurrentItem(0)}</li>
+ *     <li>The over-scroll disabled because of the left-most, i.e. the empty, item.</li>
+ *     <li>Although you shouldn't be able to scroll to the empty item, it can still be selected
+ *     with {@code setCurrentItem(0)}</li>
  * </ul>
  */
 public class VersatileViewPager extends ViewPager {
 
 	private final String TAG = getClass().getName();
+	private CopyOnWriteArraySet<OnPageChangeListener> mListeners = new CopyOnWriteArraySet<>();
+	private boolean mOnPageChangeListenersEnabled = true;
+	private float mStartDragX;
+
+	/* Overlay */
 	private ImageView mOverlayImage;
 	private ViewGroup mPagerParent, mPreviewOverlay;
 	private int mRemovedPosition;
-	private float mStartDragX;
 	private final Utils.PausableHandler mPausableHandler = new Utils.PausableHandler();
 	private ViewPager.SimpleOnPageChangeListener mTemporarySwitchListener = new ViewPager
 			.SimpleOnPageChangeListener() {
-		private boolean mIgnore;
+		private boolean mIgnoreFurtherCalls;
 		@Override
 		public void onPageScrollStateChanged(int state) {
 			super.onPageScrollStateChanged(state);
-			if (state == ViewPager.SCROLL_STATE_IDLE && !mIgnore) {
-				mIgnore = true;
+			if (state == ViewPager.SCROLL_STATE_IDLE && !mIgnoreFurtherCalls) {
+				mIgnoreFurtherCalls = true;
 				// Overlay and image while working (prevent flickering)
 				mOverlayImage.setImageBitmap(Utils.screenshot(VersatileViewPager.this));
 				mPagerParent.addView(mPreviewOverlay);
@@ -77,17 +89,21 @@ public class VersatileViewPager extends ViewPager {
 				getAdapter().useRealCount();
 				getAdapter().notifyDataSetChanged();
 
-				// Switch to the unused page, it will be populated after notifyDataSetChanged
+				// Switch to the unused page, it's populated by notifyDataSetChanged
 				if (mRemovedPosition != -1) {
 					setCurrentItem(mRemovedPosition, false);
 				}
 
 				// When switches have settled, remove the preview and re-enable scrolling
-				post(new Runnable() {
+				mPagerParent.post(new Runnable() {
 					@Override
 					public void run() {
-						removeOnPageChangeListener(mTemporarySwitchListener);
-						mIgnore = false;
+						// Deal with the listener via the super method, to avoid saving/removing it
+						VersatileViewPager.super
+								.removeOnPageChangeListener(mTemporarySwitchListener);
+						// Re-enable the default listeners before invoking a method that must be caught
+						setListenersEnabled(true);
+						mIgnoreFurtherCalls = false;
 						mPagerParent.removeView(mPreviewOverlay);
 						setEnabled(true);
 						// Resume other messages
@@ -118,7 +134,12 @@ public class VersatileViewPager extends ViewPager {
 							setEnabled(false);
 
 							mRemovedPosition = getCurrentItem();
-							addOnPageChangeListener(mTemporarySwitchListener);
+							// Prevent default listeners from being called
+							setListenersEnabled(false);
+							// Deal with the listener via the super method, to avoid saving/removing it
+							VersatileViewPager.super
+									.addOnPageChangeListener(mTemporarySwitchListener);
+
 							if (getCurrentItem() == getAdapter().getCount() - 1 &&
 									getCurrentItem() - 1 <= getAdapter().getRealCount() + 1) {
 								// - 1 for previous; + 1 for empty item
@@ -130,6 +151,7 @@ public class VersatileViewPager extends ViewPager {
 								setCurrentItem(getCurrentItem() + 1);
 							} else {
 								// Otherwise switch to the last available item
+								setListenersEnabled(true);
 								setCurrentItem(getAdapter().getRealCount());
 								mRemovedPosition = -1;
 							}
@@ -165,7 +187,7 @@ public class VersatileViewPager extends ViewPager {
 
 	private void init() {
 		if (Build.VERSION.SDK_INT >= 9) {
-			// Disable overscrolling
+			// Disable over-scrolling
 			setOverScrollMode(View.OVER_SCROLL_NEVER);
 		}
 		// Create an overlay layout
@@ -173,7 +195,25 @@ public class VersatileViewPager extends ViewPager {
 		mOverlayImage.setLayoutParams(new ViewGroup
 				.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		mPreviewOverlay = new RelativeLayout(getContext());
-		mPreviewOverlay.setBackgroundColor(Color.parseColor("#EEEEEE"));
+
+		// Set preview background
+		try {
+			TypedValue ta = new TypedValue();
+			getContext().getTheme().resolveAttribute(android.R.attr.windowBackground, ta, true);
+			if (ta.type >= TypedValue.TYPE_FIRST_COLOR_INT &&
+					ta.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+				// Color
+				int color = ta.data;
+				mPreviewOverlay.setBackgroundColor(color);
+			} else {
+				// Not a color, probably a drawable
+				Drawable d = getContext().getResources().getDrawable(ta.resourceId);
+				mPreviewOverlay.setBackgroundDrawable(d);
+			}
+		} catch (RuntimeException e) {
+			Log.e(TAG, "Failed to set the background!", e);
+		}
+
 		mPreviewOverlay.setLayoutParams(new ViewGroup
 				.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		mPreviewOverlay.addView(mOverlayImage);
@@ -226,6 +266,7 @@ public class VersatileViewPager extends ViewPager {
 					}
 					break;
 				case MotionEvent.ACTION_UP:
+
 					/**
 					 * If scrollX < current page's left position then the page will be switched
 					 * which means the empty item becomes exposed. In such cases, manually scroll to
@@ -266,6 +307,41 @@ public class VersatileViewPager extends ViewPager {
 			}
 		}
 		return super.onInterceptTouchEvent(event);
+	}
+
+	@Override
+	public void addOnPageChangeListener(OnPageChangeListener listener) {
+		super.addOnPageChangeListener(listener);
+		mListeners.add(listener);
+	}
+
+	@Override
+	public void removeOnPageChangeListener(OnPageChangeListener listener) {
+		super.removeOnPageChangeListener(listener);
+		mListeners.remove(listener);
+	}
+
+	@Override
+	public void clearOnPageChangeListeners() {
+		super.clearOnPageChangeListeners();
+		mListeners.clear();
+	}
+
+	private void setListenersEnabled(boolean enabled) {
+		if (isListenersEnabled() != enabled) {
+			if (enabled) {
+				for (OnPageChangeListener listener : mListeners) {
+					super.addOnPageChangeListener(listener);
+				}
+			} else {
+				super.clearOnPageChangeListeners();
+			}
+			mOnPageChangeListenersEnabled = enabled;
+		}
+	}
+
+	private boolean isListenersEnabled() {
+		return mOnPageChangeListenersEnabled;
 	}
 
 }
