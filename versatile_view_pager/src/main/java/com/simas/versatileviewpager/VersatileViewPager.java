@@ -63,11 +63,12 @@ public class VersatileViewPager extends ViewPager {
 	private final Utils.PausableHandler mPausableHandler = new Utils.PausableHandler();
 	private ViewPager.SimpleOnPageChangeListener mTemporarySwitchListener = new ViewPager
 			.SimpleOnPageChangeListener() {
+		private boolean mIgnore;
 		@Override
 		public void onPageScrollStateChanged(int state) {
 			super.onPageScrollStateChanged(state);
-			if (state == ViewPager.SCROLL_STATE_IDLE) {
-				removeOnPageChangeListener(this);
+			if (state == ViewPager.SCROLL_STATE_IDLE && !mIgnore) {
+				mIgnore = true;
 				// Overlay and image while working (prevent flickering)
 				mOverlayImage.setImageBitmap(Utils.screenshot(VersatileViewPager.this));
 				mPagerParent.addView(mPreviewOverlay);
@@ -77,12 +78,16 @@ public class VersatileViewPager extends ViewPager {
 				getAdapter().notifyDataSetChanged();
 
 				// Switch to the unused page, it will be populated after notifyDataSetChanged
-				setCurrentItem(mRemovedPosition, false);
+				if (mRemovedPosition != -1) {
+					setCurrentItem(mRemovedPosition, false);
+				}
 
 				// When switches have settled, remove the preview and re-enable scrolling
 				post(new Runnable() {
 					@Override
 					public void run() {
+						removeOnPageChangeListener(mTemporarySwitchListener);
+						mIgnore = false;
 						mPagerParent.removeView(mPreviewOverlay);
 						setEnabled(true);
 						// Resume other messages
@@ -114,11 +119,17 @@ public class VersatileViewPager extends ViewPager {
 
 							mRemovedPosition = getCurrentItem();
 							addOnPageChangeListener(mTemporarySwitchListener);
-							// Animate to the previous item if last one removed, forward otherwise
-							if (getCurrentItem() == getAdapter().getCount() - 1) {
+							if (getCurrentItem() == getAdapter().getCount() - 1 &&
+									getCurrentItem() - 1 <= getAdapter().getRealCount() + 1) {        // - 1 for previous; + 1 for empty item
+								// Switch to previous item if it's available
 								setCurrentItem(getCurrentItem() - 1);
-							} else {
+							} else if (getCurrentItem() + 1 <= getAdapter().getRealCount() + 1) { // + 1 for next; + 1 for empty item
+								// Switch to next item if it's available
 								setCurrentItem(getCurrentItem() + 1);
+							} else {
+								// Otherwise switch to the last available item
+								setCurrentItem(getAdapter().getRealCount());
+								mRemovedPosition = -1;
 							}
 							return;
 						}
