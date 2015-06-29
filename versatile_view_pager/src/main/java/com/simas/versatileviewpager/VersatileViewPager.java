@@ -120,10 +120,12 @@ public class VersatileViewPager extends ViewPager {
 							mRemovedPosition = getCurrentItem();
 							addOnPageChangeListener(mTemporarySwitchListener);
 							if (getCurrentItem() == getAdapter().getCount() - 1 &&
-									getCurrentItem() - 1 <= getAdapter().getRealCount() + 1) {        // - 1 for previous; + 1 for empty item
+									getCurrentItem() - 1 <= getAdapter().getRealCount() + 1) {
+								// - 1 for previous; + 1 for empty item
 								// Switch to previous item if it's available
 								setCurrentItem(getCurrentItem() - 1);
-							} else if (getCurrentItem() + 1 <= getAdapter().getRealCount() + 1) { // + 1 for next; + 1 for empty item
+							} else if (getCurrentItem() + 1 <= getAdapter().getRealCount() + 1) {
+								// + 1 for next; + 1 for empty item
 								// Switch to next item if it's available
 								setCurrentItem(getCurrentItem() + 1);
 							} else {
