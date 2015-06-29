@@ -27,6 +27,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.MessageQueue;
 import android.os.Parcelable;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.*;
 import android.support.v4.view.PagerAdapter;
 import android.util.AttributeSet;
@@ -198,7 +199,7 @@ public class VersatileViewPager extends ViewPager {
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if (!isEnabled()) {
+		if (!isEnabled() || getAdapter() == null) {
 			return true;
 		} else if (getCurrentItem() <= 1 && getAdapter().getCount() > 1) {
 			switch (event.getAction()) {
@@ -213,19 +214,23 @@ public class VersatileViewPager extends ViewPager {
 					break;
 				case MotionEvent.ACTION_UP:
 					/**
-					 * If (scrollX < getClientWidth()) then the page will be switched, i.e.
-					 * empty item becomes exposed. Then, manually scroll to the end of the page.
+					 * If scrollX < current page's left position then the page will be switched
+					 * which means the empty item becomes exposed. In such cases, manually scroll to
+					 * the end of the page.
 					 */
-					if (getScrollX() % getClientWidth() != 0) {
-						if (getScrollX() < 0 && Math.abs(getScrollX()) > getClientWidth()) {
-							Log.w(TAG, "Bad ScrollX: " + getScrollX() + " client width: " + getClientWidth());
-							int pages = (int) Math.round(Math.abs(getScrollX()) / (double) getClientWidth());
-							scrollTo(pages * getClientWidth() * -1, getScrollY());
-						} else if (getScrollX() < getClientWidth()) {
-							Log.w(TAG, "Bad ScrollX: " + getScrollX() + " client width: " + getClientWidth());
-							scrollTo(getClientWidth(), getScrollY());
+					Fragment fragment = (Fragment) getAdapter().getPrimaryItem();
+					if (fragment != null && fragment.getView() != null) {
+						int viewLeft = fragment.getView().getLeft();
+						if (getScrollX() < viewLeft) {
+							Log.w(TAG, String.format("Bad ScrollX: %d ChildLeft: %d",
+									getScrollX(), viewLeft));
+							scrollTo(viewLeft, getScrollY());
 						}
+					} else {
+						// In case the fragment or its view are not ready when scrolling, consume
+						return true;
 					}
+					break;
 			}
 		}
 		return super.onTouchEvent(event);
@@ -235,7 +240,7 @@ public class VersatileViewPager extends ViewPager {
 	public boolean onInterceptTouchEvent(MotionEvent event) {
 		if (!isEnabled()) {
 			return true;
-		} else if (getCurrentItem() <= 1 && getAdapter().getCount() > 1) {
+		} else if (getCurrentItem() <= 1 && getAdapter() != null && getAdapter().getCount() > 1) {
 			switch (event.getAction()) {
 				case MotionEvent.ACTION_DOWN:
 					mStartDragX = event.getX();
@@ -248,10 +253,6 @@ public class VersatileViewPager extends ViewPager {
 			}
 		}
 		return super.onInterceptTouchEvent(event);
-	}
-
-	private int getClientWidth() {
-		return getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
 	}
 
 }

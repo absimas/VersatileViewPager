@@ -229,7 +229,6 @@ public abstract class VersatilePagerAdapter extends PagerAdapter {
 			}
 			int count = bundle.getInt(STATE_COUNT, 0);
 			if (count > 0) {
-				// Change the count and notify manually since list may need the count immediately
 				mRealCount = mCount = count;
 				notifyDataSetChanged();
 			}
