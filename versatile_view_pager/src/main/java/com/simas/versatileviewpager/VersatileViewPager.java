@@ -47,9 +47,13 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * To switch seamlessly after the current item is no longer in at the current position, the pager
  * switches to the neighbour (forward if there are any, otherwise backwards). After switching to
  * the neighbour an image depicting the current view will be overlain while the real position
- * switching takes place by invoking {@link VersatilePagerAdapter#notifyDataSetChanged()}. <br/><br/>
- * While this two step switch takes place, the {@link android.support.v4.view.ViewPager
- * .OnPageChangeListener}s are disabled.
+ * switching takes place by invoking {@link VersatilePagerAdapter#notifyDataSetChanged()}. <br/>
+ * <br/><br/>
+ * <img src="listener_callbacks_during_transition.png"/><br/>
+ * This dialog shows the callback modifications during the two switches that take place when
+ * switching items as explained above. The 2 callbacks that are modified and invoked are:
+ * {@link android.support.v4.view.ViewPager.OnPageChangeListener#onPageScrollStateChanged(int)} and
+ * {@link android.support.v4.view.ViewPager.OnPageChangeListener#onPageSelected(int)}.<br/><br/>
  * <h5>Notes:</h5>
  * <ul>
  *     <li>The preview will be added as sibling and can block the view of widgets like DrawerLayout.
@@ -76,6 +80,17 @@ public class VersatileViewPager extends ViewPager {
 	private ViewPager.SimpleOnPageChangeListener mTemporarySwitchListener = new ViewPager
 			.SimpleOnPageChangeListener() {
 		private boolean mIgnoreFurtherCalls;
+
+		@Override
+		public void onPageSelected(int position) {
+			super.onPageSelected(position);
+			if (!mIgnoreFurtherCalls && mRemovedPosition != -1) {
+				for (OnPageChangeListener listener : mListeners) {
+					listener.onPageSelected(mRemovedPosition);
+				}
+			}
+		}
+
 		@Override
 		public void onPageScrollStateChanged(int state) {
 			super.onPageScrollStateChanged(state);
@@ -91,6 +106,9 @@ public class VersatileViewPager extends ViewPager {
 
 				// Switch to the unused page, it's populated by notifyDataSetChanged
 				if (mRemovedPosition != -1) {
+					for (OnPageChangeListener listener : mListeners) {
+						listener.onPageScrollStateChanged(ViewPager.SCROLL_STATE_IDLE);
+					}
 					setCurrentItem(mRemovedPosition, false);
 				}
 
