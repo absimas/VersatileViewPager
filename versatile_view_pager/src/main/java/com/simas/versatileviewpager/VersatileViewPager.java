@@ -39,6 +39,9 @@ import android.widget.RelativeLayout;
 
 import java.util.concurrent.CopyOnWriteArraySet;
 
+// ToDo when a remvoed item forces a change in positions, the currently selected item blinks
+	// Display an overlay here too?
+
 /**
  * <h4>How it works:</h4>
  * When deleting it switches to its neighbour with {@link #setCurrentItem(int)}, however if both
@@ -152,8 +155,6 @@ public class VersatileViewPager extends ViewPager {
 							setEnabled(false);
 
 							mRemovedPosition = getCurrentItem();
-							// Prevent default listeners from being called
-							setListenersEnabled(false);
 							// Deal with the listener via the super method, to avoid saving/removing it
 							VersatileViewPager.super
 									.addOnPageChangeListener(mTemporarySwitchListener);
@@ -161,15 +162,15 @@ public class VersatileViewPager extends ViewPager {
 							if (getCurrentItem() == getAdapter().getCount() - 1 &&
 									getCurrentItem() - 1 <= getAdapter().getRealCount() + 1) {
 								// - 1 for previous; + 1 for empty item
-								// Switch to previous item if it's available
+								// switch to previous item
 								setCurrentItem(getCurrentItem() - 1);
 							} else if (getCurrentItem() + 1 <= getAdapter().getRealCount() + 1) {
 								// + 1 for next; + 1 for empty item
-								// Switch to next item if it's available
+								// Switch to next item // Default listeners should be disabled
+								setListenersEnabled(false);
 								setCurrentItem(getCurrentItem() + 1);
 							} else {
 								// Otherwise switch to the last available item
-								setListenersEnabled(true);
 								setCurrentItem(getAdapter().getRealCount());
 								mRemovedPosition = -1;
 							}
@@ -348,11 +349,15 @@ public class VersatileViewPager extends ViewPager {
 	private void setListenersEnabled(boolean enabled) {
 		if (isListenersEnabled() != enabled) {
 			if (enabled) {
+				// Add default listeners
 				for (OnPageChangeListener listener : mListeners) {
 					super.addOnPageChangeListener(listener);
 				}
 			} else {
-				super.clearOnPageChangeListeners();
+				// Remove default listeners
+				for (OnPageChangeListener listener : mListeners) {
+					super.removeOnPageChangeListener(listener);
+				}
 			}
 			mOnPageChangeListenersEnabled = enabled;
 		}
